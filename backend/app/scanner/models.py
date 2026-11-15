@@ -121,6 +121,9 @@ class ScoreBreakdown:
     total: int
     dimensions: list[ScoreDimension]
     label: str = "heuristic"
+    # Points subtracted from the dimension sum (TODO/FIXME markers).
+    penalty: int = 0
+    penalty_reason: str = ""
 
 
 @dataclass

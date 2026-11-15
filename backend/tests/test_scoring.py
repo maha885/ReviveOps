@@ -220,3 +220,25 @@ class TestDeterminism:
         for dim in score.dimensions:
             assert dim.explanation
             assert len(dim.explanation) > 10
+
+
+# ── Penalty transparency ───────────────────────────────────────────────
+
+
+def test_total_equals_dimension_sum_minus_penalty():
+    """The headline total must be explainable from the visible rows."""
+    findings = [
+        _f("dep-manifest-present", Category.DEPENDENCIES, Severity.INFO),
+        _f("todo-1", Category.CODE_QUALITY, Severity.LOW),
+        _f("todo-2", Category.CODE_QUALITY, Severity.LOW),
+    ]
+    score = compute_score(findings)
+    assert score.penalty == 4
+    assert score.total == sum(d.score for d in score.dimensions) - score.penalty
+    assert "2 TODO/FIXME" in score.penalty_reason
+
+
+def test_no_penalty_without_todos():
+    score = compute_score([])
+    assert score.penalty == 0
+    assert score.penalty_reason == ""

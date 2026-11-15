@@ -10,8 +10,8 @@ from app.db import Database
 
 
 @pytest.fixture(autouse=True)
-def test_db(tmp_path, monkeypatch):
+def test_db(tmp_path_factory, monkeypatch):
     """Replace app.main.db with a fresh temp database per test."""
-    db = Database(tmp_path / "test_reviveops.db")
+    db = Database(tmp_path_factory.mktemp("db") / "test_reviveops.db")
     monkeypatch.setattr("app.main.db", db)
     yield

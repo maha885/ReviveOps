@@ -60,6 +60,11 @@ function App() {
             <div className="score-track"><i style={{ width: `${dimension.max_points ? Math.min(100, dimension.score / dimension.max_points * 100) : 0}%` }} /></div>
           </div>
         ))}
+        {(result.score.penalty ?? 0) > 0 && (
+          <div className="score-dimension score-penalty" title={result.score.penalty_reason}>
+            <div><span>Code quality penalty</span><b>−{result.score.penalty}</b></div>
+          </div>
+        )}
       </div>
     </div>
   )

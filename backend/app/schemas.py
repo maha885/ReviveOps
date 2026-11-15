@@ -65,6 +65,8 @@ class ScoreBreakdownSchema(BaseModel):
     total: int
     dimensions: list[ScoreDimensionSchema]
     label: str = "heuristic"
+    penalty: int = 0
+    penalty_reason: str = ""
 
 
 class TaskSchema(BaseModel):

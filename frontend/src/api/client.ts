@@ -29,7 +29,7 @@ export interface Finding {
 export interface ScoreDimension {
   name: string; score: number; max_points: number; explanation: string; finding_ids: string[]
 }
-export interface ScoreBreakdown { total: number; dimensions: ScoreDimension[]; label: string }
+export interface ScoreBreakdown { total: number; dimensions: ScoreDimension[]; label: string; penalty?: number; penalty_reason?: string }
 export interface RecoveryTask {
   task_id: string; title: string; priority: string; rationale: string
   evidence: string; recommended_action: string; completed: boolean

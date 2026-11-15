@@ -90,6 +90,8 @@ def _reconstruct_score(d: dict) -> ScoreBreakdown:
             for dim in d["dimensions"]
         ],
         label=d.get("label", "heuristic"),
+        penalty=d.get("penalty", 0),
+        penalty_reason=d.get("penalty_reason", ""),
     )
 
 

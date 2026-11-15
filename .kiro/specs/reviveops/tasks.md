@@ -1,10 +1,10 @@
 # ReviveOps MVP — Implementation Tasks
 
 ## Phase 1 — Foundation
-- [ ] Create FastAPI app, `/health`, typed schemas, and pytest setup.
-- [ ] Create React + TypeScript + Vite app and basic dark “revival console” layout.
-- [ ] Add frontend API client and health indicator.
-- [ ] Add README local setup instructions.
+- [x] Create FastAPI app, `/health`, typed schemas, and pytest setup.
+- [x] Create React + TypeScript + Vite app and basic dark “revival console” layout.
+- [x] Add frontend API client and health indicator.
+- [x] Add README local setup instructions.
 
 ## Phase 2 — Scanner
 - [x] Implement safe repository traversal and ignore rules.
@@ -30,11 +30,11 @@
   - Deliberately missing: README, lockfile, tests, CI, Dockerfile
 
 ## Phase 3 — Intelligence and workflow
-- [ ] Implement deterministic 0–100 score and dimension breakdown.
-- [ ] Convert findings into prioritized checklist tasks.
-- [ ] Persist scans and checklist status in SQLite.
-- [ ] Build overview, findings, and checklist UI.
-- [ ] Add Markdown report renderer and download.
+- [x] Implement deterministic 0–100 score and dimension breakdown.
+- [x] Convert findings into prioritized checklist tasks.
+- [x] Persist scans and checklist status in SQLite.
+- [x] Build overview, findings, and checklist UI.
+- [x] Add Markdown report renderer and download.
 
 ## Phase 4 — Local AI and polish
 - [ ] Add optional Ollama adapter with model/config checks.

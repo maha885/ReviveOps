@@ -174,5 +174,15 @@ def compute_score(findings: list[Finding]) -> ScoreBreakdown:
     # Each TODO/FIXME marker costs 2 points, capped at 10.
     code_penalty = min(len(code_findings) * 2, 10)
     total = max(0, total - code_penalty)
+    penalty_reason = (
+        f"{len(code_findings)} TODO/FIXME marker(s) found (2 pts each, max 10)"
+        if code_penalty
+        else ""
+    )
 
-    return ScoreBreakdown(total=total, dimensions=dimensions)
+    return ScoreBreakdown(
+        total=total,
+        dimensions=dimensions,
+        penalty=code_penalty,
+        penalty_reason=penalty_reason,
+    )
