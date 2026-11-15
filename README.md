@@ -1,187 +1,125 @@
 # ReviveOps — Bring Dormant Projects Back to Life
 
-**Hackathon track:** Resurrection  
-**Builder:** Solo · Intermediate · Local-first  
-**Working title:** ReviveOps
+**Kiroween 2026 · Category: Resurrection**
 
-ReviveOps is a local-first AI-assisted project revival workbench. It helps a developer understand a dormant or broken repository, identify setup/build blockers, prioritize repair tasks, and generate a safe, reviewable revival plan. The MVP uses a demo repository and deterministic diagnostics so the product works even without a cloud account or paid AI API.
+ReviveOps is a local-first workbench for reviving abandoned repositories. Point it at a codebase and it tells you how healthy the project is, gives you a prioritized recovery checklist, and can generate the missing starter files (README, smoke test, CI workflow, Dockerfile) — applied to a **copy**, so your original repository is never touched.
 
-## MVP user journey
-1. Open ReviveOps and load the bundled demo repository (or point to a local folder).
-2. Run a repository health scan: project files, dependencies, scripts, tests, TODOs, and common setup issues.
-3. View a “revival score,” blocker list, and prioritized checklist.
-4. Ask the local AI helper to explain a blocker and suggest a patch/command (Ollama optional).
-5. Review a generated revival report and export it as Markdown.
+> Demo result: the bundled dormant repository goes from **8 / 100** to **80 / 100** after one click.
 
-## Revive action
-After a scan, **Preview changes** lists the starter files ReviveOps would add (README, a smoke test, a GitHub Actions workflow, a Dockerfile). **Revive a copy** writes them into a *copy* of the repository (`backend/revived/`), rescans it, and shows the score before and after. The original repository is never modified. Lockfiles are left as a manual step because they need a real dependency resolver.
+## Why
 
-## Local-first architecture
-- Frontend: React + TypeScript + Vite + Tailwind (or plain CSS initially)
-- API: Python + FastAPI
-- Scanner: Python standard library first; optional language-specific adapters
-- Storage: SQLite (scan history and user decisions)
-- AI: Ollama local model, optional; deterministic templates are the fallback
-- Tests: pytest + Vitest
-- Run: Docker Compose optional; native local run supported
+Everyone has inherited a repo that has no README, no tests, no CI, and no idea how to run it. Getting it moving again is slow, boring, and easy to get wrong. ReviveOps turns that first hour of detective work into a repeatable, explainable process.
 
-## Local Setup
+## Features
 
-### Prerequisites
-- **Python 3.11+** — [download](https://www.python.org/downloads/)
-- **Node.js 18+** — [download](https://nodejs.org/)
+- **Safe repository scanner** — detects READMEs, dependency manifests and lockfiles, tests, CI configuration, Dockerfiles/Compose, and TODO/FIXME-style markers. It never executes anything from the scanned repo, never follows symlinks outside the root, skips dependency/build folders, and enforces file-count, file-size and time limits.
+- **Explainable revival score (0–100)** — five weighted dimensions (Documentation, Dependencies, Testing, CI/CD, Containerization) plus a visible code-quality penalty. The score is labelled *heuristic*: it estimates readiness, it does not guarantee the project builds.
+- **Prioritized recovery checklist** — every task links back to concrete evidence and a recommended action. Completion is saved.
+- **Revive action** — preview and then apply generated starter files to a copy of the repository, rescan it, and compare the score before and after. Existing files are never overwritten. Things that need real tooling (such as a lockfile) are listed as manual steps instead of faked.
+- **Markdown revival report** — generate and download a report for any scan.
+- **Saved scans** — scans and checklist progress are stored in a local SQLite database.
+- **No cloud, no account, no AI required** — everything is deterministic and runs on your machine.
 
-### Project structure
+## How it works
 
-```
-ReviveOps_Kiro_Blueprint/
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── config.py             # Settings (app name, CORS, scan limits)
-│   │   ├── main.py               # FastAPI app + /health, /, POST /api/scans
-│   │   ├── schemas.py            # Pydantic models (health, root, scan, finding)
-│   │   └── scanner/
-│   │       ├── __init__.py
-│   │       ├── models.py          # Finding, ScanResult, ScanLimits, enums
-│   │       ├── traversal.py       # Safe directory traversal + ignore rules
-│   │       ├── detectors.py       # File signal detectors (README, CI, TODO, …)
-│   │       └── scanner.py         # Orchestrator: traverse → detect → sort
-│   ├── demo_repo/                # Bundled dormant demo repository fixture
-│   │   ├── src/
-│   │   │   ├── __init__.py
-│   │   │   ├── main.py            # Contains TODO / FIXME markers
-│   │   │   └── utils.py            # Contains TODO marker
-│   │   ├── pyproject.toml         # Minimal manifest
-│   │   └── .gitignore
-│   ├── tests/
-│   │   ├── __init__.py
-│   │   ├── test_health.py         # Tests for /health and /
-│   │   ├── test_scanner.py        # Tests for traversal, detectors, integration
-│   │   └── test_scan_api.py       # Tests for POST /api/scans endpoint
-│   ├── requirements.txt
-│   └── pyproject.toml             # pytest config
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── client.ts           # Typed API client (health + scan)
-│   │   ├── components/
-│   │   │   ├── HealthIndicator.tsx     # Live backend status badge + card
-│   │   │   ├── HealthIndicator.css
-│   │   │   ├── ScanPanel.tsx           # Scan input, controls, results display
-│   │   │   ├── ScanPanel.css
-│   │   │   ├── FindingsList.tsx        # Sorted findings with severity badges
-│   │   │   └── FindingsList.css
-│   │   ├── App.tsx                # Revival console layout
-│   │   ├── App.css
-│   │   ├── main.tsx               # React entry point
-│   │   └── index.css              # Global theme tokens + dark base
-│   ├── index.html
-│   ├── vite.config.ts             # Vite + dev-server proxy config
-│   ├── tsconfig.json
-│   └── package.json
-└── README.md
-```
+1. Scan a local folder, or click **Use Demo Repository**.
+2. Read the score, findings, and recovery checklist.
+3. Click **Preview changes** to see exactly which files would be added and why.
+4. Click **Revive a copy** to write them into `backend/revived/<scan-id>/`, rescan, and see the score before and after.
+5. Tick off the manual steps and download the report.
 
-### Backend (FastAPI)
+## Quick start
 
-```bash
-cd backend
+**Prerequisites:** Python 3.11+ and Node.js 18+.
 
-# Create a virtual environment
-python -m venv .venv
+**Terminal 1 — backend**
 
-# Activate it:
-#   Windows (PowerShell):  .venv\Scripts\Activate.ps1
-#   macOS / Linux:         source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Start the dev server (auto-reloads on changes)
-uvicorn app.main:app --reload --port 8000
-```
-
-The API is now running at `http://localhost:8000`.
-- Health check: `http://localhost:8000/health`
-- Scan repository: `POST http://localhost:8000/api/scans` (body: `{"path": "demo"}`)
-- Interactive API docs (Swagger UI): `http://localhost:8000/docs`
-
-### Backend tests (pytest)
-
-```bash
-cd backend
-# Activate the virtual environment first (see above)
-
-pytest
-```
-
-### Frontend (React + TypeScript + Vite)
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start the dev server
-npm run dev
-```
-
-The UI is now running at `http://localhost:5173`.
-
-Vite proxies `/health` and `/api/*` to the backend on port 8000, so both
-servers must run simultaneously for the health indicator to turn green.
-
-### Frontend production build
-
-```bash
-cd frontend
-npm run build    # type-check + production build → dist/
-npm run preview  # preview the production build locally
-```
-
-### Quick start (both terminals)
-
-**Terminal 1 — Backend:**
 ```bash
 cd backend
 python -m venv .venv
-.venv\Scripts\Activate.ps1          # Windows PowerShell
-# source .venv/bin/activate          # macOS / Linux
+# Windows (PowerShell):  .venv\Scripts\Activate.ps1
+# macOS / Linux:         source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Terminal 2 — Frontend:**
+**Terminal 2 — frontend**
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser. The health badge in the
-header turns green when the backend is online and red with a hint message
-when it is unreachable.
+Open <http://localhost:5173>. The sidebar shows **Backend Online** when the API is reachable. Click **Use Demo Repository** to try it without any setup.
 
-## Non-goals for first submission
-- Automatically applying code changes without approval
-- Sending repository contents to external services by default
-- Supporting every language/build system
-- Cloud deployment or cloud-provider dependencies
+API docs (Swagger UI): <http://localhost:8000/docs>
 
-## Build order
-1. Scaffold API + UI and health endpoint.
-2. Implement demo repo + repository scanner.
-3. Build findings/score/checklist UI.
-4. Add report export.
-5. Add optional Ollama explain/plan endpoint.
-6. Polish, test, record demo, document Kiro workflow.
+### Run the tests
 
-## Definition of done
-- `README` has setup/run instructions.
-- A user can scan the bundled demo and see meaningful findings.
-- Revival score and recommendations are explainable.
-- Report exports successfully.
-- Tests pass; app runs locally from a clean checkout.
-- `.kiro/` artifacts are committed and demonstrate spec-driven development.
+```bash
+cd backend
+python -m pytest
+```
+
+### Production build of the UI
+
+```bash
+cd frontend
+npm run build
+```
+
+## API
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| GET | `/health` | Backend status (polled by the UI) |
+| POST | `/api/scans` | Scan a repository (`{"path": "demo"}` for the bundled demo) |
+| GET | `/api/scans/{id}` | Fetch a saved scan |
+| PATCH | `/api/scans/{id}/tasks/{task_id}` | Mark a checklist task done / not done |
+| GET | `/api/scans/{id}/report` | Markdown revival report |
+| GET | `/api/scans/{id}/revival-plan` | Preview the starter files that would be added (changes nothing) |
+| POST | `/api/scans/{id}/revive` | Apply the plan to a **copy**, rescan, return before/after score |
+
+## Project layout
+
+```
+.kiro/                     Kiro specs and steering documents
+backend/
+  app/
+    main.py                FastAPI app and endpoints
+    scanner/               Safe traversal, detectors, scan orchestration
+    services/              scoring.py, checklist.py, report.py, revive.py
+    db.py                  SQLite persistence (scans, checklist state)
+  demo_repo/               Bundled dormant repository used for the demo
+  tests/                   pytest suite (includes a Hypothesis property test)
+frontend/                  React + TypeScript + Vite UI
+```
+
+## Safety design
+
+- Scanning only reads file metadata and text; nothing from the scanned repository is executed.
+- Symlinks that resolve outside the repository root are skipped.
+- Revival writes only to a copy under `backend/revived/`, blocks path traversal, and never overwrites an existing file.
+- Everything stays on your machine; no repository content is sent to any external service.
+
+## Built with Kiro
+
+The project was developed spec-first. The specs and steering documents live in [`.kiro/`](.kiro/):
+
+- `.kiro/specs/reviveops/` — requirements, design, and the phase-by-phase task list
+- `.kiro/steering/` — product principles and technical conventions that guided implementation
+
+The foundation, scanner, scoring, checklist, persistence and report features were built with Kiro from these specs. The Revive action and its tests were added afterwards with other AI assistance and the Kiro editor.
+
+## Limitations
+
+- The score is a heuristic based on repository signals; it does not build or run the project.
+- Generated files are generic starting points and should be reviewed and adapted.
+- Python and Node.js projects get the most useful output; other project types get a README and manual steps.
+- Lockfiles cannot be generated without the real package manager, so they stay a manual step.
+- Optional local-AI explanations (e.g. Ollama) are planned but not implemented.
+
+## License
+
+[MIT](LICENSE)
