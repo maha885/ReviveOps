@@ -10,7 +10,7 @@ import { EmptyState } from './components/EmptyState'
 import { StatCardSkeleton, FindingsSkeleton } from './components/Skeleton'
 import { HealthIndicator } from './components/HealthIndicator'
 import { RevivePanel } from './components/RevivePanel'
-import { ApiError, scanRepository,  updateTask, getReport, type ScanResult, type RecoveryTask } from './api/client'
+import { ApiError, scanRepository,  updateTask, getReport, type ScanResult, type RecoveryTask, type ReviveResult } from './api/client'
 import './App.css'
 
 const VIEW_LABELS: Record<ViewId,string> = { overview:'Overview', scanner:'Repository Scanner', findings:'Findings', checklist:'Recovery Checklist', reports:'Revival Reports', settings:'Settings' }
@@ -28,6 +28,7 @@ function App() {
   const [taskBusy,setTaskBusy]=useState<string|null>(null)
   const [report,setReport]=useState<string|null>(null)
   const [reportError,setReportError]=useState<string|null>(null)
+  const [reviveSummary,setReviveSummary]=useState<{scanId:string;before:number;after:number;files:number}|null>(null)
 
   useEffect(()=>{let cancelled=false;async function check(){try{const r=await fetch('/health');if(!cancelled)setHealthStatus(r.ok?'online':'offline')}catch{if(!cancelled)setHealthStatus('offline')}}check();const timer=setInterval(check,30000);return()=>{cancelled=true;clearInterval(timer)}},[])
 
@@ -39,6 +40,8 @@ function App() {
   const loadReport=useCallback(async()=>{if(!result)return;setReportError(null);try{const data=await getReport(result.scan_id);setReport(data.markdown)}catch(e){setReportError(e instanceof Error?e.message:'Could not load report')}},[result])
   const downloadReport=()=>{if(!report)return;const blob=new Blob([report],{type:'text/markdown;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${result?.repo_name??'reviveops'}-revival-report.md`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
   const isScanning=scanState==='scanning'
+  const isRevived=!!result?.label?.startsWith('revived from')
+  const banner=reviveSummary&&result&&reviveSummary.scanId===result.scan_id?reviveSummary:null
   const criticalHigh=result?.findings.filter(f=>f.severity==='critical'||f.severity==='high').length??0
   const tasks=result?.tasks??[]
   const done=tasks.filter(t=>t.completed).length
@@ -107,6 +110,7 @@ function App() {
         <TopBar
           viewLabel={VIEW_LABELS[activeView]}
           repoName={result?.repo_name ?? null}
+          badge={isRevived ? 'Revived copy' : null}
           scanStatus={scanState}
           onRescan={handleRescan}
           onToggleSidebar={() => setMobileSidebar((value) => !value)}
@@ -136,7 +140,13 @@ function App() {
                 <>
                   <div className="section-label">Project intelligence</div>
                   {scoreCard}
-                  <RevivePanel key={result.scan_id} scanId={result.scan_id} onRevived={(scan) => { setResult(scan); setReport(null) }} />
+                  {banner && (
+                    <div className="revive-banner">
+                      <strong>Revived copy</strong>
+                      <span>Score {banner.before} → {banner.after} · {banner.files} file(s) added · original repository untouched</span>
+                    </div>
+                  )}
+                  <RevivePanel key={result.scan_id} scanId={result.scan_id} isRevived={isRevived} onRevived={(scan, outcome: ReviveResult) => { setReviveSummary({ scanId: scan.scan_id, before: outcome.score_before, after: outcome.score_after, files: outcome.files_written.length }); setResult(scan); setReport(null) }} />
                   <div className="stat-grid">
                     <StatCard icon={HardDrive} label="Files scanned" value={result.file_count} />
                     <StatCard icon={Search} label="Total findings" value={result.findings.length} />

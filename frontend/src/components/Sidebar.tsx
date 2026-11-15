@@ -35,8 +35,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
   { id: 'scanner', label: 'Repository Scanner', icon: Radar },
   { id: 'findings', label: 'Findings', icon: AlertTriangle },
-  { id: 'checklist', label: 'Recovery Checklist', icon: ListChecks, disabled: true },
-  { id: 'reports', label: 'Revival Reports', icon: FileText, disabled: true },
+  { id: 'checklist', label: 'Recovery Checklist', icon: ListChecks },
+  { id: 'reports', label: 'Revival Reports', icon: FileText },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 

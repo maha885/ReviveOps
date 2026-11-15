@@ -9,6 +9,7 @@ import './TopBar.css'
 interface TopBarProps {
   viewLabel: string
   repoName: string | null
+  badge?: string | null
   scanStatus: 'idle' | 'scanning' | 'success' | 'error'
   onRescan: () => void
   onToggleSidebar: () => void
@@ -27,6 +28,7 @@ const STATUS_CONFIG: Record<
 export function TopBar({
   viewLabel,
   repoName,
+  badge,
   scanStatus,
   onRescan,
   onToggleSidebar,
@@ -69,6 +71,7 @@ export function TopBar({
             <span className="topbar__repo-name">{repoName}</span>
           </div>
         )}
+        {badge && <span className="topbar__badge">{badge}</span>}
         <div className={`topbar__status ${status.className}`}>
           <span className="topbar__status-dot" />
           {status.label}
