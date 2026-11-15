@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Run backend tests on save",
+      "description": "Runs the backend pytest suite whenever a backend Python file is saved, so scanner, scoring and revive regressions are caught immediately.",
+      "trigger": "PostFileSave",
+      "matcher": "backend[\\\\/].*\\.py$",
+      "action": {
+        "type": "command",
+        "command": "python -m pytest backend -q"
+      },
+      "timeout": 120,
+      "enabled": true
+    }
+  ]
+}
