@@ -1,0 +1,162 @@
+/* ── Global styles & theme tokens ─────────────────────────────────────── */
+/*  ReviveOps premium dark dashboard — Linear/Vercel/Raycast inspired.    */
+
+:root {
+  /* ── Base backgrounds ── */
+  --bg-base: #08080c;
+  --bg-surface: #0c0c14;
+  --bg-elevated: #11111c;
+  --bg-card: #14141e;
+  --bg-hover: #1a1a28;
+  --bg-input: #0a0a12;
+
+  /* ── Borders ── */
+  --border: #1e1e2e;
+  --border-light: #2a2a3e;
+  --border-hover: #3a3a52;
+  --border-accent: rgba(129, 140, 248, 0.3);
+
+  /* ── Text ── */
+  --text-primary: #e2e2ee;
+  --text-secondary: #9999b0;
+  --text-muted: #6b6b80;
+  --text-dim: #4a4a5e;
+
+  /* ── Accent (indigo / purple) ── */
+  --accent: #818cf8;
+  --accent-bright: #a78bfa;
+  --accent-dim: #6366f1;
+  --accent-deep: #4f46e5;
+  --accent-glow: rgba(129, 140, 248, 0.15);
+  --accent-gradient: linear-gradient(135deg, #6366f1, #a78bfa);
+  --accent-gradient-bright: linear-gradient(135deg, #818cf8, #c4b5fd);
+
+  /* ── Severity colours ── */
+  --sev-critical: #f43f5e;
+  --sev-critical-bg: rgba(244, 63, 94, 0.1);
+  --sev-critical-border: rgba(244, 63, 94, 0.25);
+  --sev-high: #fb923c;
+  --sev-high-bg: rgba(251, 146, 60, 0.1);
+  --sev-high-border: rgba(251, 146, 60, 0.25);
+  --sev-medium: #fbbf24;
+  --sev-medium-bg: rgba(251, 191, 36, 0.1);
+  --sev-medium-border: rgba(251, 191, 36, 0.25);
+  --sev-low: #38bdf8;
+  --sev-low-bg: rgba(56, 189, 248, 0.1);
+  --sev-low-border: rgba(56, 189, 248, 0.25);
+  --sev-info: #64748b;
+  --sev-info-bg: rgba(100, 116, 139, 0.1);
+  --sev-info-border: rgba(100, 116, 139, 0.25);
+
+  /* ── Status ── */
+  --success: #22c55e;
+  --success-glow: rgba(34, 197, 94, 0.15);
+  --error: #f43f5e;
+  --warning: #fbbf24;
+
+  /* ── Fonts ── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Oxygen, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', 'Consolas',
+    'Courier New', monospace;
+
+  /* ── Radius ── */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* ── Transitions ── */
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 100ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 24px rgba(129, 140, 248, 0.12);
+
+  /* ── Layout ── */
+  --sidebar-width: 248px;
+  --topbar-height: 56px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Faint radial glow for depth */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(
+    ellipse 80% 50% at 50% -10%,
+    rgba(99, 102, 241, 0.06),
+    transparent
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* Shared animation keyframes */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

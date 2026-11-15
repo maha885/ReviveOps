@@ -1,0 +1,291 @@
+/* ── Findings view ─────────────────────────────────────────────────────── */
+
+.findings-view {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Filter tabs */
+.findings-view__filters {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.findings-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.findings-tab:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.findings-tab--active {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--accent-bright);
+}
+
+.findings-tab__count {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  background: var(--bg-card);
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 4px;
+  color: var(--text-muted);
+}
+
+.findings-tab--active .findings-tab__count {
+  background: rgba(129, 140, 248, 0.12);
+  color: var(--accent-bright);
+}
+
+/* Severity-tinted active tabs */
+.findings-tab--critical.findings-tab--active {
+  border-color: var(--sev-critical);
+  color: var(--sev-critical);
+}
+.findings-tab--high.findings-tab--active {
+  border-color: var(--sev-high);
+  color: var(--sev-high);
+}
+.findings-tab--medium.findings-tab--active {
+  border-color: var(--sev-medium);
+  color: var(--sev-medium);
+}
+.findings-tab--low.findings-tab--active {
+  border-color: var(--sev-low);
+  color: var(--sev-low);
+}
+.findings-tab--info.findings-tab--active {
+  border-color: var(--sev-info);
+  color: var(--sev-info);
+}
+
+/* Finding list */
+.findings-view__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Finding card */
+.finding-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color var(--transition);
+}
+
+.finding-card:hover {
+  border-color: var(--border-light);
+}
+
+.finding-card--open {
+  border-color: var(--border-light);
+}
+
+/* Severity left border */
+.finding-card--critical {
+  border-left: 3px solid var(--sev-critical);
+}
+.finding-card--high {
+  border-left: 3px solid var(--sev-high);
+}
+.finding-card--medium {
+  border-left: 3px solid var(--sev-medium);
+}
+.finding-card--low {
+  border-left: 3px solid var(--sev-low);
+}
+.finding-card--info {
+  border-left: 3px solid var(--sev-info);
+}
+
+/* Card header (clickable) */
+.finding-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.finding-card__header:hover {
+  background: var(--bg-hover);
+}
+
+/* Severity dot */
+.finding-card__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.finding-card__dot--critical {
+  background: var(--sev-critical);
+  box-shadow: 0 0 6px rgba(244, 63, 94, 0.5);
+}
+.finding-card__dot--high {
+  background: var(--sev-high);
+  box-shadow: 0 0 6px rgba(251, 146, 60, 0.4);
+}
+.finding-card__dot--medium {
+  background: var(--sev-medium);
+}
+.finding-card__dot--low {
+  background: var(--sev-low);
+}
+.finding-card__dot--info {
+  background: var(--sev-info);
+}
+
+/* Category icon */
+.finding-card__cat-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.finding-card__cat-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.finding-card__title {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Severity badge */
+.finding-card__badge {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.finding-card__badge--critical {
+  color: var(--sev-critical);
+  background: var(--sev-critical-bg);
+}
+.finding-card__badge--high {
+  color: var(--sev-high);
+  background: var(--sev-high-bg);
+}
+.finding-card__badge--medium {
+  color: var(--sev-medium);
+  background: var(--sev-medium-bg);
+}
+.finding-card__badge--low {
+  color: var(--sev-low);
+  background: var(--sev-low-bg);
+}
+.finding-card__badge--info {
+  color: var(--sev-info);
+  background: var(--sev-info-bg);
+}
+
+/* Chevron */
+.finding-card__chevron {
+  color: var(--text-dim);
+  transition: transform var(--transition);
+  flex-shrink: 0;
+}
+
+.finding-card__chevron--open {
+  transform: rotate(180deg);
+}
+
+/* Card body */
+.finding-card__body {
+  padding: 0 1rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: fadeIn 150ms ease;
+}
+
+.finding-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.finding-card__field-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.finding-card__field-value {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.finding-card__evidence {
+  font-family: var(--font-mono);
+  word-break: break-word;
+}
+
+.finding-card__source {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: var(--bg-input);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  word-break: break-all;
+  display: inline-block;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .finding-card__cat-label {
+    display: none;
+  }
+
+  .finding-card__title {
+    font-size: 0.75rem;
+  }
+}

@@ -1,0 +1,84 @@
+/* ── Skeleton loading ─────────────────────────────────────────────────── */
+
+.skeleton-card,
+.skeleton-finding {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+}
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.skeleton-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.skeleton-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--shimmer-bg);
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeleton-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.skeleton-finding__row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.skeleton-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--shimmer-bg);
+  animation: shimmer 1.5s infinite linear;
+  flex-shrink: 0;
+}
+
+.skeleton-bar {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--shimmer-bg);
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeleton-bar--sm {
+  width: 60px;
+}
+.skeleton-bar--md {
+  width: 140px;
+}
+.skeleton-bar--xl {
+  width: 48px;
+  height: 28px;
+}
+
+@keyframes shimmer {
+  0% {
+    background: var(--border);
+  }
+  50% {
+    background: var(--border-light);
+  }
+  100% {
+    background: var(--border);
+  }
+}
+
+:root {
+  --shimmer-bg: var(--border);
+}
