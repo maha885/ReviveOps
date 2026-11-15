@@ -55,3 +55,16 @@ export async function updateTask(scanId: string, taskId: string, completed: bool
 export async function getReport(scanId: string): Promise<ReportResponse> {
   return request(`/api/scans/${encodeURIComponent(scanId)}/report`)
 }
+
+export interface ProposedFile { path: string; content: string; finding_id: string; rationale: string }
+export interface RevivalPlan { scan_id: string; project_type: string; files: ProposedFile[]; manual_steps: string[] }
+export interface ReviveResult {
+  source_scan_id: string; files_written: string[]
+  score_before: number; score_after: number; revived_scan: ScanResult
+}
+export async function getRevivalPlan(scanId: string): Promise<RevivalPlan> {
+  return request(`/api/scans/${encodeURIComponent(scanId)}/revival-plan`)
+}
+export async function reviveRepository(scanId: string): Promise<ReviveResult> {
+  return request(`/api/scans/${encodeURIComponent(scanId)}/revive`, { method: 'POST' })
+}

@@ -17,7 +17,10 @@ from app.db import Database
 from app.schemas import (
     FindingSchema,
     HealthResponse,
+    ProposedFileSchema,
     ReportResponse,
+    ReviveResponse,
+    RevivalPlanResponse,
     RootResponse,
     ScanRequest,
     ScanResponse,
@@ -26,6 +29,7 @@ from app.schemas import (
     TaskUpdateRequest,
 )
 from app.scanner import ScanLimits, scan_repository
+from app.scanner.traversal import traverse
 from app.scanner.models import (
     Category,
     Finding,
@@ -36,6 +40,7 @@ from app.scanner.models import (
 )
 from app.services.checklist import generate_tasks
 from app.services.report import render_report
+from app.services.revive import apply_plan_to_copy, build_plan
 from app.services.scoring import compute_score
 
 app = FastAPI(
@@ -135,6 +140,62 @@ async def health_check() -> HealthResponse:
 DEMO_REPO_PATH = Path(__file__).resolve().parent.parent / "demo_repo"
 
 
+def _scan_limits() -> ScanLimits:
+    return ScanLimits(
+        max_files=settings.scan_max_files,
+        max_file_size_bytes=settings.scan_max_file_size_bytes,
+        max_duration_seconds=settings.scan_max_duration_seconds,
+        max_todo_findings=settings.scan_max_todo_findings,
+    )
+
+
+def _scan_and_persist(root: Path, label: str | None) -> ScanResponse:
+    """Scan *root*, compute score and tasks, persist, and build the response."""
+    # Build limits from settings.
+    limits = _scan_limits()
+
+    # Run the scan (file-system errors are caught and recorded, not raised).
+    try:
+        result = scan_repository(root, limits)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    # Compute score and generate recovery tasks from findings.
+    score = compute_score(result.findings)
+    tasks = generate_tasks(result.findings)
+
+    # Persist the scan to SQLite.
+    scan_id = uuid.uuid4().hex
+    db.save_scan(
+        scan_id=scan_id,
+        repo_name=result.repo_name,
+        scanned_at=result.scanned_at,
+        file_count=result.file_count,
+        truncated=result.truncated,
+        errors=result.errors,
+        label=label,
+        findings_json=json.dumps(
+            [asdict(f) for f in result.findings], default=str
+        ),
+        score_json=json.dumps(asdict(score), default=str),
+        tasks_json=json.dumps([asdict(t) for t in tasks], default=str),
+        root_path=str(root),
+    )
+
+    return ScanResponse(
+        scan_id=scan_id,
+        repo_name=result.repo_name,
+        scanned_at=result.scanned_at,
+        findings=[FindingSchema(**asdict(f)) for f in result.findings],
+        file_count=result.file_count,
+        truncated=result.truncated,
+        errors=result.errors,
+        label=label,
+        score=ScoreBreakdownSchema(**asdict(score)),
+        tasks=[TaskSchema(**asdict(t)) for t in tasks],
+    )
+
+
 @app.post("/api/scans", response_model=ScanResponse, tags=["scans"])
 async def create_scan(request: ScanRequest) -> ScanResponse:
     """Scan a repository and return findings.
@@ -164,53 +225,7 @@ async def create_scan(request: ScanRequest) -> ScanResponse:
             detail=f"Not a directory: {request.path}",
         )
 
-    # Build limits from settings.
-    limits = ScanLimits(
-        max_files=settings.scan_max_files,
-        max_file_size_bytes=settings.scan_max_file_size_bytes,
-        max_duration_seconds=settings.scan_max_duration_seconds,
-        max_todo_findings=settings.scan_max_todo_findings,
-    )
-
-    # Run the scan (file-system errors are caught and recorded, not raised).
-    try:
-        result = scan_repository(root, limits)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-    # Compute score and generate recovery tasks from findings.
-    score = compute_score(result.findings)
-    tasks = generate_tasks(result.findings)
-
-    # Persist the scan to SQLite.
-    scan_id = uuid.uuid4().hex
-    db.save_scan(
-        scan_id=scan_id,
-        repo_name=result.repo_name,
-        scanned_at=result.scanned_at,
-        file_count=result.file_count,
-        truncated=result.truncated,
-        errors=result.errors,
-        label=request.label,
-        findings_json=json.dumps(
-            [asdict(f) for f in result.findings], default=str
-        ),
-        score_json=json.dumps(asdict(score), default=str),
-        tasks_json=json.dumps([asdict(t) for t in tasks], default=str),
-    )
-
-    return ScanResponse(
-        scan_id=scan_id,
-        repo_name=result.repo_name,
-        scanned_at=result.scanned_at,
-        findings=[FindingSchema(**asdict(f)) for f in result.findings],
-        file_count=result.file_count,
-        truncated=result.truncated,
-        errors=result.errors,
-        label=request.label,
-        score=ScoreBreakdownSchema(**asdict(score)),
-        tasks=[TaskSchema(**asdict(t)) for t in tasks],
-    )
+    return _scan_and_persist(root, request.label)
 
 
 @app.get("/api/scans/{scan_id}", response_model=ScanResponse, tags=["scans"])
@@ -313,4 +328,71 @@ async def get_scan_report(scan_id: str) -> ReportResponse:
         repo_name=scan["repo_name"],
         scanned_at=scan["scanned_at"],
         markdown=markdown,
+    )
+
+
+REVIVED_DIR = BACKEND_DIR / "revived"
+
+
+def _load_source(scan_id: str):
+    """Return (scan row, source root) or raise the right HTTP error."""
+    scan = db.get_scan(scan_id)
+    if scan is None:
+        raise HTTPException(status_code=404, detail=f"Scan not found: {scan_id}")
+    root_path = scan.get("root_path")
+    if not root_path or not Path(root_path).is_dir():
+        raise HTTPException(
+            status_code=409,
+            detail="The scanned repository is no longer available. Run a new scan.",
+        )
+    return scan, Path(root_path)
+
+
+@app.get(
+    "/api/scans/{scan_id}/revival-plan",
+    response_model=RevivalPlanResponse,
+    tags=["revival"],
+)
+async def get_revival_plan(scan_id: str) -> RevivalPlanResponse:
+    """Preview the starter files ReviveOps would add. Changes nothing."""
+    scan, root = _load_source(scan_id)
+    findings = [_reconstruct_finding(f) for f in json.loads(scan["findings"])]
+    traversal = traverse(root, _scan_limits())
+    plan = build_plan(scan["repo_name"], [rel for _, rel in traversal.files], findings)
+    return RevivalPlanResponse(
+        scan_id=scan_id,
+        project_type=plan.project_type,
+        files=[ProposedFileSchema(**asdict(f)) for f in plan.files],
+        manual_steps=plan.manual_steps,
+    )
+
+
+@app.post(
+    "/api/scans/{scan_id}/revive",
+    response_model=ReviveResponse,
+    tags=["revival"],
+)
+async def revive_repository(scan_id: str) -> ReviveResponse:
+    """Apply the revival plan to a *copy* of the repository and rescan it.
+
+    The original repository is never modified. The copy lives under
+    ``backend/revived/<scan_id>`` and is scanned like any other repo so the
+    before/after score can be compared.
+    """
+    scan, root = _load_source(scan_id)
+    before = _reconstruct_score(json.loads(scan["score"]))
+    findings = [_reconstruct_finding(f) for f in json.loads(scan["findings"])]
+    traversal = traverse(root, _scan_limits())
+    plan = build_plan(scan["repo_name"], [rel for _, rel in traversal.files], findings)
+
+    dest = REVIVED_DIR / scan_id / scan["repo_name"]
+    written = apply_plan_to_copy(traversal.files, plan, dest)
+    revived = _scan_and_persist(dest, f"revived from {scan_id[:8]}")
+
+    return ReviveResponse(
+        source_scan_id=scan_id,
+        files_written=written,
+        score_before=before.total,
+        score_after=revived.score.total,
+        revived_scan=revived,
     )

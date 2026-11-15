@@ -36,7 +36,11 @@
 - [x] Build overview, findings, and checklist UI.
 - [x] Add Markdown report renderer and download.
 
-## Phase 4 — Local AI and polish
+## Phase 4 — Revival and polish
+- [x] Revival planner: generate README, smoke test, CI workflow and Dockerfile for what is missing (`backend/app/services/revive.py`).
+- [x] Apply the plan to a copy of the repository, never the original; rescan to show before/after score.
+- [x] `GET /api/scans/{id}/revival-plan` and `POST /api/scans/{id}/revive` with tests (incl. a Hypothesis property test).
+- [x] Revive panel in the UI (preview changes, revive a copy, before/after score).
 - [ ] Add optional Ollama adapter with model/config checks.
 - [ ] Add deterministic explanation fallback.
 - [ ] Add finding detail / explain UI with clear AI labeling.

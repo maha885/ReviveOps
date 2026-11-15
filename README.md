@@ -13,6 +13,9 @@ ReviveOps is a local-first AI-assisted project revival workbench. It helps a dev
 4. Ask the local AI helper to explain a blocker and suggest a patch/command (Ollama optional).
 5. Review a generated revival report and export it as Markdown.
 
+## Revive action
+After a scan, **Preview changes** lists the starter files ReviveOps would add (README, a smoke test, a GitHub Actions workflow, a Dockerfile). **Revive a copy** writes them into a *copy* of the repository (`backend/revived/`), rescans it, and shows the score before and after. The original repository is never modified. Lockfiles are left as a manual step because they need a real dependency resolver.
+
 ## Local-first architecture
 - Frontend: React + TypeScript + Vite + Tailwind (or plain CSS initially)
 - API: Python + FastAPI

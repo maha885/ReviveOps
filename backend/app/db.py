@@ -57,6 +57,10 @@ class Database:
     def _init_schema(self) -> None:
         with self._connect() as conn:
             conn.executescript(SCHEMA_SQL)
+            # Lightweight migration: older databases lack root_path.
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(scans)")}
+            if "root_path" not in columns:
+                conn.execute("ALTER TABLE scans ADD COLUMN root_path TEXT")
 
     # ── Scans ──────────────────────────────────────────────────────────
 
@@ -72,14 +76,15 @@ class Database:
         findings_json: str,
         score_json: str,
         tasks_json: str,
+        root_path: str | None = None,
     ) -> None:
         """Insert or replace a scan record."""
         with self._connect() as conn:
             conn.execute(
                 """INSERT OR REPLACE INTO scans
                    (scan_id, repo_name, scanned_at, file_count, truncated,
-                    errors, label, findings, score, tasks)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    errors, label, findings, score, tasks, root_path)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
                     scan_id,
                     repo_name,
@@ -91,6 +96,7 @@ class Database:
                     findings_json,
                     score_json,
                     tasks_json,
+                    root_path,
                 ),
             )
 

@@ -112,3 +112,34 @@ class ScanResponse(BaseModel):
     label: str | None = None
     score: ScoreBreakdownSchema
     tasks: list[TaskSchema]
+
+
+# ── Phase 4: revival plan ───────────────────────────────────────────────
+
+
+class ProposedFileSchema(BaseModel):
+    """A starter file ReviveOps proposes adding."""
+
+    path: str
+    content: str
+    finding_id: str
+    rationale: str
+
+
+class RevivalPlanResponse(BaseModel):
+    """Response body for GET /api/scans/{id}/revival-plan."""
+
+    scan_id: str
+    project_type: str
+    files: list[ProposedFileSchema]
+    manual_steps: list[str]
+
+
+class ReviveResponse(BaseModel):
+    """Response body for POST /api/scans/{id}/revive."""
+
+    source_scan_id: str
+    files_written: list[str]
+    score_before: int
+    score_after: int
+    revived_scan: ScanResponse
