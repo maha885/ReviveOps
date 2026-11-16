@@ -16,6 +16,16 @@ import './App.css'
 const VIEW_LABELS: Record<ViewId,string> = { overview:'Overview', scanner:'Repository Scanner', findings:'Findings', checklist:'Recovery Checklist', reports:'Revival Reports', settings:'Settings' }
 type ScanStatus = 'idle'|'scanning'|'success'|'error'
 const priorityRank: Record<string,number> = { critical:0, high:1, medium:2, low:3, info:4 }
+type Vitality = { key: 'flatline' | 'faint' | 'stirring' | 'risen'; title: string; line: string }
+
+/** Maps the heuristic score to a spooky-but-honest status. Thresholds mirror the score bands. */
+function vitality(total: number): Vitality {
+  if (total >= 80) return { key: 'risen', title: 'Ready to revive', line: 'Healthy signals across the project. A few manual items remain.' }
+  if (total >= 55) return { key: 'stirring', title: 'Stirring', line: 'Signs of life, but important pieces are still missing.' }
+  if (total >= 25) return { key: 'faint', title: 'Faint pulse', line: 'Barely alive. Start with the high-priority recovery tasks.' }
+  return { key: 'flatline', title: 'Flatlining', line: 'Critical recovery needed. Little in this project is ready to run.' }
+}
+
 function App() {
   const [activeView,setActiveView]=useState<ViewId>('overview')
   const [scanState,setScanState]=useState<ScanStatus>('idle')
@@ -48,13 +58,14 @@ function App() {
   const sortedTasks=useMemo(()=>[...tasks].sort((a,b)=>(priorityRank[a.priority.toLowerCase()]??9)-(priorityRank[b.priority.toLowerCase()]??9)),[tasks])
 
   const scoreCard = result && (
-    <div className="revive-score-panel">
-      <div className="revive-score-ring" style={{ '--score': result.score.total } as CSSProperties}>
+    <div className={`revive-score-panel vitality-${vitality(result.score.total).key}`}>
+      <div className="revive-score-ring" key={result.scan_id} style={{ '--score': result.score.total } as CSSProperties}>
         <div><strong>{result.score.total}</strong><span>/ 100</span></div>
       </div>
       <div className="revive-score-copy">
         <span className="eyebrow">PROJECT REVIVAL SCORE · {result.score.label}</span>
-        <h2>{result.score.total >= 80 ? 'Ready to revive' : result.score.total >= 55 ? 'Needs attention' : 'Critical recovery needed'}</h2>
+        <h2>{vitality(result.score.total).title}</h2>
+        <p className="vitality-line">{vitality(result.score.total).line}</p>
         <p>Heuristic readiness score based on repository signals—not a guarantee that the project builds.</p>
       </div>
       <div className="score-dimensions">
@@ -120,6 +131,7 @@ function App() {
             <div className="view">
               <div className="view__header">
                 <h1 className="view__title">Welcome to ReviveOps</h1>
+                <p className="view__tagline">Bring dead repos back to life.</p>
                 <p className="view__subtitle">
                   Scan a repository, understand its health, and follow a
                   prioritized plan to bring it back to life—all locally.
