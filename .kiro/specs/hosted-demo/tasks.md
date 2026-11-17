@@ -1,12 +1,12 @@
 # Hosted Demo Mode — Tasks
 
 ## Backend
-- [ ] Add `demo_mode` and revived-copy age settings to `app/config.py`.
-- [ ] Add `GET /api/config`.
-- [ ] Restrict `POST /api/scans` to the bundled demo when `demo_mode` is on (HTTP 403 otherwise).
-- [ ] Clean up old revived copies before creating a new one.
-- [ ] Serve `frontend/dist` from FastAPI with an SPA fallback, without shadowing `/api` or `/health`.
-- [ ] Tests: config endpoint, 403 in demo mode, unchanged behavior when the flag is off, SPA fallback, route priority.
+- [x] Add `demo_mode` and revived-copy age settings to `app/config.py`.
+- [x] Add `GET /api/config`.
+- [x] Restrict `POST /api/scans` to the bundled demo when `demo_mode` is on (HTTP 403 otherwise).
+- [x] Clean up old revived copies before creating a new one.
+- [x] Serve `frontend/dist` from FastAPI with an SPA fallback, without shadowing `/api` or `/health`.
+- [x] Tests: config endpoint, 403 in demo mode, unchanged behavior when the flag is off, SPA fallback, route priority.
 
 ## Frontend
 - [ ] Add `getConfig()` to the API client.

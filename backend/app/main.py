@@ -9,7 +9,9 @@ import uuid
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from starlette.routing import Match
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
@@ -39,6 +41,7 @@ from app.scanner.models import (
     Severity,
 )
 from app.services.checklist import generate_tasks
+from app.services.cleanup import cleanup_old_revived
 from app.services.report import render_report
 from app.services.revive import apply_plan_to_copy, build_plan
 from app.services.scoring import compute_score
@@ -113,9 +116,26 @@ def _reconstruct_task(d: dict) -> RecoveryTask:
     )
 
 
+def _demo_index() -> Path | None:
+    """index.html of the built frontend, only when demo mode is on and it exists."""
+    if not settings.demo_mode:
+        return None
+    index = Path(settings.frontend_dist_path) / "index.html"
+    return index if index.is_file() else None
+
+
+@app.get("/api/config", tags=["config"])
+async def get_config() -> dict:
+    """Public runtime configuration for the frontend."""
+    return {"demo_mode": settings.demo_mode}
+
+
 @app.get("/", response_model=RootResponse, tags=["root"])
 async def root() -> RootResponse:
     """Basic orientation for anyone hitting the API root."""
+    index = _demo_index()
+    if index is not None:
+        return FileResponse(index)  # type: ignore[return-value]
     return RootResponse(
         name=settings.app_name,
         version=settings.app_version,
@@ -203,6 +223,16 @@ async def create_scan(request: ScanRequest) -> ScanResponse:
     Send ``{"path": "demo"}`` to scan the bundled dormant demo repository.
     Otherwise pass an absolute or relative path to a local directory.
     """
+    # Hosted demo: only the bundled demo repo. Checked before any filesystem access.
+    if settings.demo_mode and request.path != "demo":
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Hosted demo scans the bundled demo repository only. "
+                "Run ReviveOps locally to scan your own folders."
+            ),
+        )
+
     # Resolve the scan root.
     if request.path == "demo":
         root = DEMO_REPO_PATH
@@ -386,6 +416,9 @@ async def revive_repository(scan_id: str) -> ReviveResponse:
     plan = build_plan(scan["repo_name"], [rel for _, rel in traversal.files], findings)
 
     dest = REVIVED_DIR / scan_id / scan["repo_name"]
+    cleanup_old_revived(
+        REVIVED_DIR, settings.revived_max_age_minutes, keep=REVIVED_DIR / scan_id
+    )
     written = apply_plan_to_copy(traversal.files, plan, dest)
     revived = _scan_and_persist(dest, f"revived from {scan_id[:8]}")
 
@@ -396,3 +429,48 @@ async def revive_repository(scan_id: str) -> ReviveResponse:
         score_after=revived.score.total,
         revived_scan=revived,
     )
+
+
+# -- Hosted demo: serve the built frontend (must stay registered LAST) --
+
+
+_ALL_METHODS = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+
+@app.api_route("/{full_path:path}", methods=_ALL_METHODS, include_in_schema=False)
+async def spa_fallback(full_path: str, request: Request):
+    """Serve frontend assets / index.html in demo mode; otherwise behave as if
+    this route did not exist (404, or 405 when a real route has another method)."""
+    # A real route that matches the path but not the method must still give 405,
+    # exactly as before this catch-all existed.
+    allowed: set[str] = set()
+    for route in request.app.router.routes:
+        if getattr(route, "endpoint", None) is spa_fallback:
+            continue
+        match, _ = route.matches(request.scope)
+        if match == Match.PARTIAL:
+            allowed |= set(getattr(route, "methods", None) or [])
+    if allowed:
+        raise HTTPException(
+            status_code=405,
+            detail="Method Not Allowed",
+            headers={"Allow": ", ".join(sorted(allowed))},
+        )
+
+    index = _demo_index()
+    if (
+        index is None
+        or request.method not in ("GET", "HEAD")
+        or full_path == "api"
+        or full_path.startswith("api/")
+    ):
+        raise HTTPException(status_code=404, detail="Not Found")
+
+    dist = index.parent.resolve()
+    try:
+        candidate = (dist / full_path).resolve()
+        if candidate.is_file() and candidate.is_relative_to(dist):
+            return FileResponse(candidate)
+    except (OSError, ValueError):
+        pass
+    return FileResponse(index)
