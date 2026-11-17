@@ -28,6 +28,17 @@ def _env_int(name: str, default: int) -> int:
     return value if value >= 0 else default
 
 
+def _env_positive_int(name: str, default: int) -> int:
+    """Int env var that must be >= 1. Unset, empty, non-numeric, zero or
+    negative values fall back to ``default`` so a limit can't be disabled by
+    accident."""
+    try:
+        value = int(os.environ.get(name, "").strip())
+    except ValueError:
+        return default
+    return value if value > 0 else default
+
+
 def _default_frontend_dist() -> Path:
     override = os.environ.get("REVIVEOPS_FRONTEND_DIST")
     return Path(override) if override else REPO_ROOT / "frontend" / "dist"
@@ -69,6 +80,34 @@ class Settings(BaseModel):
 
     # Built frontend served in demo mode (env REVIVEOPS_FRONTEND_DIST).
     frontend_dist_path: Path = Field(default_factory=_default_frontend_dist)
+
+    # Public scan limits (all must be >= 1; invalid values use the default).
+    max_download_mb: int = Field(
+        default_factory=lambda: _env_positive_int("REVIVEOPS_MAX_DOWNLOAD_MB", 25)
+    )
+    max_extract_mb: int = Field(
+        default_factory=lambda: _env_positive_int("REVIVEOPS_MAX_EXTRACT_MB", 100)
+    )
+    max_extract_entries: int = Field(
+        default_factory=lambda: _env_positive_int("REVIVEOPS_MAX_EXTRACT_ENTRIES", 10000)
+    )
+    scan_rate_per_minute: int = Field(
+        default_factory=lambda: _env_positive_int("REVIVEOPS_SCAN_RATE_PER_MINUTE", 10)
+    )
+    download_timeout_seconds: int = Field(
+        default_factory=lambda: _env_positive_int("REVIVEOPS_DOWNLOAD_TIMEOUT_SECONDS", 20)
+    )
+    max_concurrent_scans: int = Field(
+        default_factory=lambda: _env_positive_int("REVIVEOPS_MAX_CONCURRENT_SCANS", 2)
+    )
+
+    @property
+    def max_download_bytes(self) -> int:
+        return self.max_download_mb * 1024 * 1024
+
+    @property
+    def max_extract_bytes(self) -> int:
+        return self.max_extract_mb * 1024 * 1024
 
 
 settings = Settings()

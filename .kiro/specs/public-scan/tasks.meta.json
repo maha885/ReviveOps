@@ -7,6 +7,13 @@
         "chatSessionId": "sess_3d353efa-e4ca-45b1-829f-a04ee892df33",
         "timestamp": 1794886891114
       }
+    ],
+    "`services/limits.py`: rate limiter and concurrency limit.": [
+      {
+        "executionId": "3518b610-b320-45a9-a15e-fd2c805062e1",
+        "chatSessionId": "sess_3d353efa-e4ca-45b1-829f-a04ee892df33",
+        "timestamp": 1794887908281
+      }
     ]
   }
 }

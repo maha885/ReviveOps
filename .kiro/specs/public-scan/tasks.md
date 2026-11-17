@@ -8,8 +8,8 @@ Run these in order in Kiro. Commit after each group so the history shows the spe
 - [x] `services/archive.py`: `safe_extract_zip` with zip-slip, symlink, size and entry caps.
 - [x] Unit tests + Hypothesis test for archive member names.
 - [x] `services/download.py`: capped, time-limited download; redirect only to `codeload.github.com`.
-- [ ] `services/limits.py`: rate limiter and concurrency limit.
-- [ ] `config.py`: new env-driven limits with safe defaults.
+- [x] `services/limits.py`: rate limiter and concurrency limit.
+- [x] `config.py`: new env-driven limits with safe defaults.
 - [ ] `ScanRequest` accepts exactly one of `path` / `github_url`; `create_scan` handles `github_url`; error mapping.
 - [ ] Extend cleanup to `backend/sources/`.
 - [ ] API tests with a fake downloader (no real network), including 403 for non-demo `path` in demo mode.
