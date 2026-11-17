@@ -10,6 +10,7 @@ import { EmptyState } from './components/EmptyState'
 import { StatCardSkeleton, FindingsSkeleton } from './components/Skeleton'
 import { HealthIndicator } from './components/HealthIndicator'
 import { RevivePanel } from './components/RevivePanel'
+import { OverviewHero } from './components/OverviewHero'
 import { ApiError, getConfig, scanRepository, createScanFromGitHub,  updateTask, getReport, type ScanResult, type RecoveryTask, type ReviveResult } from './api/client'
 import './App.css'
 
@@ -58,7 +59,7 @@ function App() {
   const loadReport=useCallback(async()=>{if(!result)return;setReportError(null);try{const data=await getReport(result.scan_id);setReport(data.markdown)}catch(e){setReportError(e instanceof Error?e.message:'Could not load report')}},[result])
   const downloadReport=()=>{if(!report)return;const blob=new Blob([report],{type:'text/markdown;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${result?.repo_name??'reviveops'}-revival-report.md`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
   const isScanning=scanState==='scanning'
-  const fetchingNotice=isScanning&&lastGitHubUrl?<p className="scan-input__fetching" role="status"><RefreshCw size={16} className="spin-icon" /> Fetching from GitHub�</p>:null
+  const fetchingNotice=isScanning&&lastGitHubUrl?<p className="scan-input__fetching" role="status"><RefreshCw size={16} className="spin-icon" /> Fetching from GitHub…</p>:null
   const isRevived=!!result?.label?.startsWith('revived from')
   const banner=reviveSummary&&result&&reviveSummary.scanId===result.scan_id?reviveSummary:null
   const criticalHigh=result?.findings.filter(f=>f.severity==='critical'||f.severity==='high').length??0
@@ -138,19 +139,16 @@ function App() {
         <div className="app-content">
           {activeView === 'overview' && (
             <div className="view">
-              <div className="view__header">
-                <h1 className="view__title">Welcome to ReviveOps</h1>
-                <p className="view__tagline">Bring dead repos back to life.</p>
-                <p className="view__subtitle">
-                  Scan a repository, understand its health, and follow a
-                  prioritized plan to bring it back to life—all locally.
-                </p>
-              </div>
+              {scanState !== 'idle' && (
+                <div className="view__header">
+                  <h1 className="view__title">Overview</h1>
+                  <p className="view__tagline">Bring dead repos back to life.</p>
+                </div>
+              )}
               {scanState === 'idle' && (
-                <>
-                  <div className="section-label">Repository Scan</div>
+                <OverviewHero demoMode={demoMode}>
                   <ScanInput onScan={handleScan} onScanGitHub={handleScanGitHub} githubUrl={githubUrl} setGitHubUrl={setGitHubUrl} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} demoMode={demoMode} />
-                </>
+                </OverviewHero>
               )}
               {scanState === 'scanning' && <>{fetchingNotice}<div className="loading-skeletons"><StatCardSkeleton /><FindingsSkeleton /></div></>}
               {scanState === 'error' && error && (
@@ -186,7 +184,7 @@ function App() {
             <div className="view">
               <div className="section-label">Repository scan</div>
               <ScanInput onScan={handleScan} onScanGitHub={handleScanGitHub} githubUrl={githubUrl} setGitHubUrl={setGitHubUrl} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} demoMode={demoMode} />
-              {scanState === 'idle' && <EmptyState icon={Radar} title="Ready to scan" description="Enter a local repository path or scan the bundled demo." />}
+              {scanState === 'idle' && <EmptyState icon={Radar} title="Ready to scan" description="Start a scan from the Overview page, or use the box above. Full findings appear here." />}
               {scanState === 'scanning' && <>{fetchingNotice}<FindingsSkeleton /></>}
               {scanState === 'error' && error && <div role="alert"><EmptyState icon={AlertCircle} title="Scan failed" description={error} /></div>}
               {result && (
