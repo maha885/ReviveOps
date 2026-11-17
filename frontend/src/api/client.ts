@@ -7,14 +7,38 @@ export class ApiError extends Error {
     super(message); this.name = 'ApiError'
   }
 }
+const STATUS_MESSAGES: Record<number, string> = {
+  413: 'The repository is too large to scan.',
+  502: 'Could not download the repository from GitHub. Please try again.',
+  504: 'Downloading the repository took too long. Please try again.',
+}
+
+/** Turns an error response body ({detail}) into a short readable message. */
+export function describeError(status: number, body: unknown, retryAfter?: string | null): string {
+  const detail = body && typeof body === 'object' ? (body as { detail?: unknown }).detail : undefined
+  if (typeof detail === 'string' && detail.trim()) return detail
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0] as { msg?: unknown } | null
+    const msg = first && typeof first.msg === 'string' ? first.msg : ''
+    return msg ? `Invalid request: ${msg}` : 'Invalid request. Please check your input.'
+  }
+  if (status === 429) {
+    const seconds = Number.parseInt(retryAfter ?? '', 10)
+    return Number.isFinite(seconds) && seconds > 0
+      ? `Too many requests. Please try again in ${seconds} seconds.`
+      : 'Too many requests. Please try again in a moment.'
+  }
+  return STATUS_MESSAGES[status] ?? `Request failed (HTTP ${status})`
+}
+
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   let response: Response
   try { response = await fetch(url, init) }
   catch { throw new ApiError('Cannot reach backend. Is FastAPI running on port 8000?') }
   if (!response.ok) {
-    let message = `Request failed (HTTP ${response.status})`
-    try { const body = await response.json(); if (body.detail) message = body.detail } catch {}
-    throw new ApiError(message, response.status)
+    let body: unknown
+    try { body = await response.json() } catch {}
+    throw new ApiError(describeError(response.status, body, response.headers.get('Retry-After')), response.status)
   }
   return response.json() as Promise<T>
 }
@@ -46,6 +70,14 @@ export interface ReportResponse { scan_id: string; repo_name: string; scanned_at
 
 export async function scanRepository(path: string): Promise<ScanResult> {
   return request('/api/scans', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({path}) })
+}
+export async function createScanFromGitHub(url: string): Promise<ScanResult> {
+  try {
+    return await request<ScanResult>('/api/scans', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({github_url:url}) })
+  } catch (e) {
+    if (e instanceof ApiError && e.statusCode === undefined) throw new ApiError('Could not reach the server.')
+    throw e
+  }
 }
 export async function getScan(scanId: string): Promise<ScanResult> {
   return request(`/api/scans/${encodeURIComponent(scanId)}`)

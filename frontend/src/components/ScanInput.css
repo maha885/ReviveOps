@@ -169,6 +169,34 @@
   text-align: center;
 }
 
+/* GitHub URL block */
+.scan-input__github {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.scan-input__hint,
+.scan-input__github-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.scan-input__hint {
+  color: var(--warning, #f59e0b);
+}
+
+.scan-input__fetching {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {

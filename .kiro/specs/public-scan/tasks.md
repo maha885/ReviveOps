@@ -13,8 +13,8 @@ Run these in order in Kiro. Commit after each group so the history shows the spe
 - [x] `ScanRequest` accepts exactly one of `path` / `github_url`; `create_scan` handles `github_url`; error mapping.
 - [x] Extend cleanup to `backend/sources/`.
 - [x] API tests with a fake downloader (no real network), including 403 for non-demo `path` in demo mode.
-- [ ] Frontend: `createScanFromGitHub`, GitHub URL input, loading and error states; typecheck and build.
-- [ ] README: document the feature, limits, and env vars; remove the "not AWS, Azure or GCP" hosting line.
+- [x] Frontend: `createScanFromGitHub`, GitHub URL input, loading and error states; typecheck and build.
+- [x] README: document the feature, limits, and env vars; remove the "not AWS, Azure or GCP" hosting line.
 - [ ] Full test suite passes; push; redeploy and test with one real public repo on the live URL.
 
 ## Phase 2 — Zip upload (only if Phase 1 is done and tested)

@@ -10,7 +10,7 @@ import { EmptyState } from './components/EmptyState'
 import { StatCardSkeleton, FindingsSkeleton } from './components/Skeleton'
 import { HealthIndicator } from './components/HealthIndicator'
 import { RevivePanel } from './components/RevivePanel'
-import { ApiError, getConfig, scanRepository,  updateTask, getReport, type ScanResult, type RecoveryTask, type ReviveResult } from './api/client'
+import { ApiError, getConfig, scanRepository, createScanFromGitHub,  updateTask, getReport, type ScanResult, type RecoveryTask, type ReviveResult } from './api/client'
 import './App.css'
 
 const VIEW_LABELS: Record<ViewId,string> = { overview:'Overview', scanner:'Repository Scanner', findings:'Findings', checklist:'Recovery Checklist', reports:'Revival Reports', settings:'Settings' }
@@ -33,6 +33,8 @@ function App() {
   const [error,setError]=useState<string|null>(null)
   const [repoPath,setRepoPath]=useState('')
   const [lastPath,setLastPath]=useState('demo')
+  const [githubUrl,setGitHubUrl]=useState('')
+  const [lastGitHubUrl,setLastGitHubUrl]=useState<string|null>(null)
   const [healthStatus,setHealthStatus]=useState<'online'|'offline'|'checking'>('checking')
   const [mobileSidebar,setMobileSidebar]=useState(false)
   const [taskBusy,setTaskBusy]=useState<string|null>(null)
@@ -47,14 +49,16 @@ function App() {
 
   useEffect(()=>{let cancelled=false;async function check(){try{const r=await fetch('/health');if(!cancelled)setHealthStatus(r.ok?'online':'offline')}catch{if(!cancelled)setHealthStatus('offline')}}check();const timer=setInterval(check,30000);return()=>{cancelled=true;clearInterval(timer)}},[])
 
-  const handleScan=useCallback(async(path:string)=>{setScanState('scanning');setError(null);setReport(null);setReportError(null);setLastPath(path);try{const data=await scanRepository(path);setResult(data);setScanState('success')}catch(e){setError(e instanceof ApiError?e.message:'Unexpected error');setScanState('error')}},[])
+  const handleScan=useCallback(async(path:string)=>{setScanState('scanning');setError(null);setReport(null);setReportError(null);setLastPath(path);setLastGitHubUrl(null);try{const data=await scanRepository(path);setResult(data);setScanState('success')}catch(e){setError(e instanceof ApiError?e.message:'Unexpected error');setScanState('error')}},[])
+  const handleScanGitHub=useCallback(async(url:string)=>{setScanState('scanning');setError(null);setReport(null);setReportError(null);setLastGitHubUrl(url);try{const data=await createScanFromGitHub(url);setResult(data);setScanState('success')}catch(e){setError(e instanceof ApiError?e.message:'Unexpected error');setScanState('error')}},[])
   const handleDemo=useCallback(()=>handleScan('demo'),[handleScan])
-  const handleRescan=useCallback(()=>handleScan(lastPath),[handleScan,lastPath])
+  const handleRescan=useCallback(()=>lastGitHubUrl?handleScanGitHub(lastGitHubUrl):handleScan(lastPath),[handleScan,handleScanGitHub,lastPath,lastGitHubUrl])
   // const reloadScan=useCallback(async()=>{if(!result)return;try{const fresh=await getScan(result.scan_id);setResult(fresh)}catch(e){setError(e instanceof Error?e.message:'Could not reload scan')}},[result])
   const toggleTask=useCallback(async(task:RecoveryTask)=>{if(!result||taskBusy)return;setTaskBusy(task.task_id);try{const updated=await updateTask(result.scan_id,task.task_id,!task.completed);setResult(prev=>prev?{...prev,tasks:prev.tasks.map(t=>t.task_id===updated.task_id?updated:t)}:prev)}catch(e){setError(e instanceof Error?e.message:'Could not update task')}finally{setTaskBusy(null)}},[result,taskBusy])
   const loadReport=useCallback(async()=>{if(!result)return;setReportError(null);try{const data=await getReport(result.scan_id);setReport(data.markdown)}catch(e){setReportError(e instanceof Error?e.message:'Could not load report')}},[result])
   const downloadReport=()=>{if(!report)return;const blob=new Blob([report],{type:'text/markdown;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${result?.repo_name??'reviveops'}-revival-report.md`;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
   const isScanning=scanState==='scanning'
+  const fetchingNotice=isScanning&&lastGitHubUrl?<p className="scan-input__fetching" role="status"><RefreshCw size={16} className="spin-icon" /> Fetching from GitHub…</p>:null
   const isRevived=!!result?.label?.startsWith('revived from')
   const banner=reviveSummary&&result&&reviveSummary.scanId===result.scan_id?reviveSummary:null
   const criticalHigh=result?.findings.filter(f=>f.severity==='critical'||f.severity==='high').length??0
@@ -145,13 +149,13 @@ function App() {
               {scanState === 'idle' && (
                 <>
                   <div className="section-label">Repository Scan</div>
-                  <ScanInput onScan={handleScan} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} demoMode={demoMode} />
+                  <ScanInput onScan={handleScan} onScanGitHub={handleScanGitHub} githubUrl={githubUrl} setGitHubUrl={setGitHubUrl} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} demoMode={demoMode} />
                 </>
               )}
-              {scanState === 'scanning' && <div className="loading-skeletons"><StatCardSkeleton /><FindingsSkeleton /></div>}
+              {scanState === 'scanning' && <>{fetchingNotice}<div className="loading-skeletons"><StatCardSkeleton /><FindingsSkeleton /></div></>}
               {scanState === 'error' && error && (
-                <EmptyState icon={AlertCircle} title="Scan failed" description={error}
-                  action={<button className="retry-btn" onClick={() => setScanState('idle')}>Try again</button>} />
+                <div role="alert"><EmptyState icon={AlertCircle} title="Scan failed" description={error}
+                  action={<button className="retry-btn" onClick={() => setScanState('idle')}>Try again</button>} /></div>
               )}
               {result && scanState === 'success' && (
                 <>
@@ -181,10 +185,10 @@ function App() {
           {activeView === 'scanner' && (
             <div className="view">
               <div className="section-label">Repository scan</div>
-              <ScanInput onScan={handleScan} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} demoMode={demoMode} />
+              <ScanInput onScan={handleScan} onScanGitHub={handleScanGitHub} githubUrl={githubUrl} setGitHubUrl={setGitHubUrl} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} demoMode={demoMode} />
               {scanState === 'idle' && <EmptyState icon={Radar} title="Ready to scan" description="Enter a local repository path or scan the bundled demo." />}
-              {scanState === 'scanning' && <FindingsSkeleton />}
-              {scanState === 'error' && error && <EmptyState icon={AlertCircle} title="Scan failed" description={error} />}
+              {scanState === 'scanning' && <>{fetchingNotice}<FindingsSkeleton /></>}
+              {scanState === 'error' && error && <div role="alert"><EmptyState icon={AlertCircle} title="Scan failed" description={error} /></div>}
               {result && (
                 <>
                   <div className="section-label">Scan results Â· {result.file_count} files</div>

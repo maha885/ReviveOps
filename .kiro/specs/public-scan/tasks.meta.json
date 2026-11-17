@@ -21,6 +21,13 @@
         "chatSessionId": "sess_3d353efa-e4ca-45b1-829f-a04ee892df33",
         "timestamp": 1794888386683
       }
+    ],
+    "Frontend: `createScanFromGitHub`, GitHub URL input, loading and error states; typecheck and build.": [
+      {
+        "executionId": "dd1bd04c-8563-462b-a147-a9aef515b66c",
+        "chatSessionId": "sess_3d353efa-e4ca-45b1-829f-a04ee892df33",
+        "timestamp": 1794889214962
+      }
     ]
   }
 }
