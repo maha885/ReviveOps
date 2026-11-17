@@ -12,6 +12,16 @@ def cleanup_old_revived(
     keep: Path | None = None,
     now: float | None = None,
 ) -> list[str]:
+    """Prune ``backend/revived`` (see :func:`cleanup_old_dirs`)."""
+    return cleanup_old_dirs(revived_dir, max_age_minutes, keep=keep, now=now)
+
+
+def cleanup_old_dirs(
+    revived_dir: Path,
+    max_age_minutes: int,
+    keep: Path | None = None,
+    now: float | None = None,
+) -> list[str]:
     """Delete direct child directories of *revived_dir* older than the limit.
 
     Age is the directory's own mtime. Symlinks are never followed or removed,

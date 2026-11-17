@@ -5,7 +5,7 @@ contract.  Models live here so they can be imported by both route handlers
 and the test-suite without circular imports.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class HealthResponse(BaseModel):
@@ -42,8 +42,18 @@ class FindingSchema(BaseModel):
 class ScanRequest(BaseModel):
     """Request body for POST /api/scans."""
 
-    path: str
+    path: str | None = None
+    github_url: str | None = None
     label: str | None = None
+
+    @model_validator(mode="after")
+    def _exactly_one_source(self) -> "ScanRequest":
+        # Empty strings count as invalid, not as "unset".
+        if self.path == "" or self.github_url == "":
+            raise ValueError("path and github_url must not be empty")
+        if (self.path is None) == (self.github_url is None):
+            raise ValueError("Provide exactly one of 'path' or 'github_url'")
+        return self
 
 
 # ── Phase 3: Score, tasks, report ───────────────────────────────────────

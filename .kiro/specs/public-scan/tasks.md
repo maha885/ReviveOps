@@ -10,9 +10,9 @@ Run these in order in Kiro. Commit after each group so the history shows the spe
 - [x] `services/download.py`: capped, time-limited download; redirect only to `codeload.github.com`.
 - [x] `services/limits.py`: rate limiter and concurrency limit.
 - [x] `config.py`: new env-driven limits with safe defaults.
-- [ ] `ScanRequest` accepts exactly one of `path` / `github_url`; `create_scan` handles `github_url`; error mapping.
-- [ ] Extend cleanup to `backend/sources/`.
-- [ ] API tests with a fake downloader (no real network), including 403 for non-demo `path` in demo mode.
+- [x] `ScanRequest` accepts exactly one of `path` / `github_url`; `create_scan` handles `github_url`; error mapping.
+- [x] Extend cleanup to `backend/sources/`.
+- [x] API tests with a fake downloader (no real network), including 403 for non-demo `path` in demo mode.
 - [ ] Frontend: `createScanFromGitHub`, GitHub URL input, loading and error states; typecheck and build.
 - [ ] README: document the feature, limits, and env vars; remove the "not AWS, Azure or GCP" hosting line.
 - [ ] Full test suite passes; push; redeploy and test with one real public repo on the live URL.

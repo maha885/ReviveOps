@@ -14,6 +14,13 @@
         "chatSessionId": "sess_3d353efa-e4ca-45b1-829f-a04ee892df33",
         "timestamp": 1794887908281
       }
+    ],
+    "`ScanRequest` accepts exactly one of `path` / `github_url`; `create_scan` handles `github_url`; error mapping.": [
+      {
+        "executionId": "708579d6-cba5-44c1-b891-e07dec2c67de",
+        "chatSessionId": "sess_3d353efa-e4ca-45b1-829f-a04ee892df33",
+        "timestamp": 1794888386683
+      }
     ]
   }
 }

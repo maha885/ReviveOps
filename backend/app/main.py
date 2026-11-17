@@ -5,6 +5,8 @@ Run locally with:
 """
 
 import json
+import shutil
+import tempfile
 import uuid
 from dataclasses import asdict
 from pathlib import Path
@@ -41,7 +43,28 @@ from app.scanner.models import (
     Severity,
 )
 from app.services.checklist import generate_tasks
-from app.services.cleanup import cleanup_old_revived
+from app.services.archive import (
+    ArchiveTooLarge,
+    NotAZip,
+    UnsafeArchive,
+    safe_extract_zip,
+)
+from app.services.cleanup import cleanup_old_dirs, cleanup_old_revived
+from app.services.download import (
+    DownloadError,
+    DownloadTimeout,
+    DownloadTooLarge,
+    RepoNotFound,
+    download_archive,
+)
+from app.services.github_url import InvalidGitHubUrl, archive_url, parse_github_url
+from app.services.limits import (
+    RateLimited,
+    TooManyConcurrent,
+    client_key,
+    extraction_limiter,
+    scan_rate_limiter,
+)
 from app.services.report import render_report
 from app.services.revive import apply_plan_to_copy, build_plan
 from app.services.scoring import compute_score
@@ -169,7 +192,9 @@ def _scan_limits() -> ScanLimits:
     )
 
 
-def _scan_and_persist(root: Path, label: str | None) -> ScanResponse:
+def _scan_and_persist(
+    root: Path, label: str | None, scan_id: str | None = None
+) -> ScanResponse:
     """Scan *root*, compute score and tasks, persist, and build the response."""
     # Build limits from settings.
     limits = _scan_limits()
@@ -185,7 +210,7 @@ def _scan_and_persist(root: Path, label: str | None) -> ScanResponse:
     tasks = generate_tasks(result.findings)
 
     # Persist the scan to SQLite.
-    scan_id = uuid.uuid4().hex
+    scan_id = scan_id or uuid.uuid4().hex
     db.save_scan(
         scan_id=scan_id,
         repo_name=result.repo_name,
@@ -216,13 +241,91 @@ def _scan_and_persist(root: Path, label: str | None) -> ScanResponse:
     )
 
 
+def _scan_github(http_request: Request, request: ScanRequest) -> ScanResponse:
+    """Download a public GitHub repo as a zip, extract it safely, and scan it."""
+    try:
+        scan_rate_limiter.check(client_key(http_request))
+    except RateLimited as exc:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many scans. Please wait and try again.",
+            headers={"Retry-After": str(exc.retry_after)},
+        )
+
+    try:
+        repo = parse_github_url(request.github_url or "")
+    except InvalidGitHubUrl as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    # Prune old extracted sources before creating a new one.
+    scan_id = uuid.uuid4().hex
+    source_dir = SOURCES_DIR / scan_id
+    cleanup_old_dirs(SOURCES_DIR, settings.revived_max_age_minutes, keep=source_dir)
+
+    try:
+        with extraction_limiter.slot():
+            tmp_dir = Path(tempfile.mkdtemp(prefix="reviveops-dl-"))
+            try:
+                try:
+                    zip_file = download_archive(
+                        archive_url(repo),
+                        tmp_dir / "repo.zip",
+                        settings.max_download_bytes,
+                        settings.download_timeout_seconds,
+                    )
+                    root = safe_extract_zip(
+                        zip_file,
+                        source_dir,
+                        settings.max_extract_bytes,
+                        settings.max_extract_entries,
+                    )
+                    return _scan_and_persist(
+                        root, request.label or f"{repo.owner}/{repo.repo}", scan_id
+                    )
+                except BaseException:
+                    shutil.rmtree(source_dir, ignore_errors=True)
+                    raise
+            finally:
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+    except TooManyConcurrent as exc:
+        raise HTTPException(status_code=429, detail=str(exc))
+    except RepoNotFound:
+        raise HTTPException(
+            status_code=404, detail="Repository not found or not public."
+        )
+    except (DownloadTooLarge, ArchiveTooLarge):
+        raise HTTPException(
+            status_code=413, detail="Repository is too large to scan."
+        )
+    except DownloadTimeout:
+        raise HTTPException(
+            status_code=504, detail="Downloading the repository timed out."
+        )
+    except (UnsafeArchive, NotAZip):
+        raise HTTPException(
+            status_code=422,
+            detail="The repository archive is invalid or unsafe.",
+        )
+    except DownloadError:
+        raise HTTPException(
+            status_code=502, detail="Could not download the repository."
+        )
+
+
+# Sync ``def`` on purpose: FastAPI runs it in a worker thread, so the blocking
+# download/extract/scan never stalls the event loop. The local-path branch is
+# unchanged apart from running in that thread.
 @app.post("/api/scans", response_model=ScanResponse, tags=["scans"])
-async def create_scan(request: ScanRequest) -> ScanResponse:
+def create_scan(request: ScanRequest, http_request: Request) -> ScanResponse:
     """Scan a repository and return findings.
 
-    Send ``{"path": "demo"}`` to scan the bundled dormant demo repository.
-    Otherwise pass an absolute or relative path to a local directory.
+    Send ``{"path": "demo"}`` to scan the bundled dormant demo repository,
+    ``{"path": "<dir>"}`` for a local directory, or
+    ``{"github_url": "https://github.com/<owner>/<repo>"}`` for a public repo.
     """
+    if request.github_url is not None:
+        return _scan_github(http_request, request)
+
     # Hosted demo: only the bundled demo repo. Checked before any filesystem access.
     if settings.demo_mode and request.path != "demo":
         raise HTTPException(
@@ -362,6 +465,7 @@ async def get_scan_report(scan_id: str) -> ReportResponse:
 
 
 REVIVED_DIR = BACKEND_DIR / "revived"
+SOURCES_DIR = BACKEND_DIR / "sources"
 
 
 def _load_source(scan_id: str):
