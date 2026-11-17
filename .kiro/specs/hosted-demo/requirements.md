@@ -34,7 +34,7 @@ As a visitor, I want the UI to tell me why the folder-path input is unavailable,
 - In demo mode the path input is hidden or disabled, with a short note pointing to the README's local setup, and "Use Demo Repository" is the primary action.
 - Local mode looks and behaves exactly as before.
 
-### US-3b (stretch): Scan a public GitHub repository
+### US-3b: Scan a public GitHub repository (moved to `.kiro/specs/public-scan`)
 As a visitor, I want to paste a public GitHub URL, so I can try ReviveOps on a real dormant project.
 
 **Acceptance criteria**
@@ -49,7 +49,7 @@ As a contributor, I want a documented deploy path, so the hosted demo can be rep
 **Acceptance criteria**
 - A `Dockerfile` builds the UI and runs the API in one container.
 - README documents the environment variable, the build, and deploying to a free host.
-- Hosting must not use AWS, Azure, or GCP.
+- Any host that runs a Dockerfile works. (The Official Rules do not restrict hosting providers.)
 
 ## Out of scope
 - Authentication, user accounts, or per-user storage.

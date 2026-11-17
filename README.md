@@ -71,6 +71,8 @@ npm run build
 
 ## Hosted demo
 
+Live demo: <https://reviveops-0ig9.onrender.com> (free host, so the first load after idle can take about a minute).
+
 A single Docker container can serve both the API and the built UI, so anyone can try ReviveOps from a URL without installing anything.
 
 **What demo mode is.** Setting `REVIVEOPS_DEMO_MODE=true` restricts the server. `POST /api/scans` accepts only the bundled demo (`{"path": "demo"}`); any other path returns HTTP 403, so visitors cannot read files on the server. The UI hides the folder-path input and keeps **Use Demo Repository**. Demo mode is off by default, so local use is unchanged. To scan your own folders, run ReviveOps locally (see [Quick start](#quick-start)).
@@ -99,7 +101,7 @@ Open <http://localhost:8000>. To use another port, pass `PORT` and map it:
 docker run -e PORT=9000 -p 9000:9000 reviveops
 ```
 
-**Deploy to a free host.** Any host that runs a Dockerfile and is not AWS, Azure or GCP works. Two options:
+**Deploy to a free host.** Any host that runs a Dockerfile works. Two options:
 
 - **Render** — create a *Web Service* from this repository, choose the Docker runtime and the free instance type. Render sets `PORT` and the container reads it. Free web services spin down after about 15 minutes without traffic and take roughly a minute to wake on the next request.
 - **Hugging Face Spaces (Docker)** — create a Space with the Docker SDK. Spaces expect the app on port 7860 by default, so either set `app_port: 8000` in the Space's README metadata or run the container with `PORT=7860`. Check Hugging Face's current pricing page to see whether the free hardware tier covers Docker Spaces for your account.
