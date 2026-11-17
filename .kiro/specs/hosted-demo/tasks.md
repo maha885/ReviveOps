@@ -14,8 +14,8 @@
 - [x] Typecheck and build pass.
 
 ## Packaging and docs
-- [ ] Multi-stage `Dockerfile` and `.dockerignore`.
-- [ ] README: "Hosted demo" section (env var, Docker build/run, deploy to a free non-AWS/Azure/GCP host, note that storage is ephemeral).
+- [-] Multi-stage `Dockerfile` and `.dockerignore`.
+- [x] README: "Hosted demo" section (env var, Docker build/run, deploy to a free non-AWS/Azure/GCP host, note that storage is ephemeral).
 - [ ] Verify the container locally: `docker build` then `docker run -p 8000:8000`, open `http://localhost:8000`, run the demo end to end.
 
 ## Deployment

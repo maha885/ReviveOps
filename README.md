@@ -69,6 +69,45 @@ cd frontend
 npm run build
 ```
 
+## Hosted demo
+
+A single Docker container can serve both the API and the built UI, so anyone can try ReviveOps from a URL without installing anything.
+
+**What demo mode is.** Setting `REVIVEOPS_DEMO_MODE=true` restricts the server. `POST /api/scans` accepts only the bundled demo (`{"path": "demo"}`); any other path returns HTTP 403, so visitors cannot read files on the server. The UI hides the folder-path input and keeps **Use Demo Repository**. Demo mode is off by default, so local use is unchanged. To scan your own folders, run ReviveOps locally (see [Quick start](#quick-start)).
+
+**Environment variables**
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `REVIVEOPS_DEMO_MODE` | off | `true`, `1` or `yes` turns on demo mode. The Dockerfile sets it to `true`. |
+| `REVIVEOPS_FRONTEND_DIST` | `frontend/dist` in the repo | Folder with the built UI, served in demo mode. The Dockerfile sets it to `/app/frontend/dist`. |
+| `REVIVEOPS_REVIVED_MAX_AGE_MINUTES` | `60` | Revived copies older than this are deleted before a new one is created. |
+| `PORT` | `8000` | Port the container listens on. Many hosts set this for you. |
+
+No secrets or API keys are needed.
+
+**Build and run with Docker**
+
+```bash
+docker build -t reviveops .
+docker run -p 8000:8000 reviveops
+```
+
+Open <http://localhost:8000>. To use another port, pass `PORT` and map it:
+
+```bash
+docker run -e PORT=9000 -p 9000:9000 reviveops
+```
+
+**Deploy to a free host.** Any host that runs a Dockerfile and is not AWS, Azure or GCP works. Two options:
+
+- **Render** — create a *Web Service* from this repository, choose the Docker runtime and the free instance type. Render sets `PORT` and the container reads it. Free web services spin down after about 15 minutes without traffic and take roughly a minute to wake on the next request.
+- **Hugging Face Spaces (Docker)** — create a Space with the Docker SDK. Spaces expect the app on port 7860 by default, so either set `app_port: 8000` in the Space's README metadata or run the container with `PORT=7860`. Check Hugging Face's current pricing page to see whether the free hardware tier covers Docker Spaces for your account.
+
+Free-tier limits change, so confirm them on the host's site before relying on them.
+
+**Storage is ephemeral.** The SQLite database and revived copies live inside the container. They are lost when the service restarts or is redeployed. Old revived copies are also removed automatically (see `REVIVEOPS_REVIVED_MAX_AGE_MINUTES`).
+
 ## API
 
 | Method | Endpoint | Purpose |
