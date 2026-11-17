@@ -9,9 +9,9 @@
 - [x] Tests: config endpoint, 403 in demo mode, unchanged behavior when the flag is off, SPA fallback, route priority.
 
 ## Frontend
-- [ ] Add `getConfig()` to the API client.
-- [ ] Hide or disable the path input in demo mode with an explanatory note; keep "Use Demo Repository" prominent.
-- [ ] Typecheck and build pass.
+- [x] Add `getConfig()` to the API client.
+- [x] Hide or disable the path input in demo mode with an explanatory note; keep "Use Demo Repository" prominent.
+- [x] Typecheck and build pass.
 
 ## Packaging and docs
 - [ ] Multi-stage `Dockerfile` and `.dockerignore`.

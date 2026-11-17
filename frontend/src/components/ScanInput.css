@@ -145,6 +145,30 @@
   cursor: not-allowed;
 }
 
+/* Hosted demo mode */
+.scan-input__btn-demo--primary {
+  background: var(--accent-gradient);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+}
+
+.scan-input__btn-demo--primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  color: #fff;
+  background: var(--accent-gradient);
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+}
+
+.scan-input__note {
+  margin: 1rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+  text-align: center;
+}
+
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {

@@ -14,6 +14,8 @@ interface ScanInputProps {
   isScanning: boolean
   repoPath: string
   setRepoPath: (path: string) => void
+  /** Hosted demo: only the bundled demo repository can be scanned. */
+  demoMode?: boolean
 }
 
 export function ScanInput({
@@ -22,10 +24,34 @@ export function ScanInput({
   isScanning,
   repoPath,
   setRepoPath,
+  demoMode = false,
 }: ScanInputProps) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (repoPath.trim()) onScan(repoPath.trim())
+  }
+
+  if (demoMode) {
+    return (
+      <div className="scan-input">
+        <button
+          className="scan-input__btn-demo scan-input__btn-demo--primary"
+          onClick={onDemo}
+          disabled={isScanning}
+        >
+          {isScanning ? (
+            <Loader2 size={16} className="scan-input__spin" />
+          ) : (
+            <Sparkles size={16} />
+          )}
+          Use Demo Repository
+        </button>
+        <p className="scan-input__note" role="note">
+          The hosted demo scans the bundled demo repository only. To scan your
+          own folders, run ReviveOps locally; setup instructions are in the README.
+        </p>
+      </div>
+    )
   }
 
   return (

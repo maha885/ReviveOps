@@ -20,6 +20,9 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 export async function checkHealth(): Promise<HealthResponse> { return request('/health') }
 
+export interface AppConfig { demo_mode: boolean }
+export async function getConfig(): Promise<AppConfig> { return request('/api/config') }
+
 export type Severity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 export type Category = 'documentation' | 'dependencies' | 'tests' | 'ci' | 'containerization' | 'code_quality' | 'setup'
 export interface Finding {

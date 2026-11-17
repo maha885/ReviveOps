@@ -10,7 +10,7 @@ import { EmptyState } from './components/EmptyState'
 import { StatCardSkeleton, FindingsSkeleton } from './components/Skeleton'
 import { HealthIndicator } from './components/HealthIndicator'
 import { RevivePanel } from './components/RevivePanel'
-import { ApiError, scanRepository,  updateTask, getReport, type ScanResult, type RecoveryTask, type ReviveResult } from './api/client'
+import { ApiError, getConfig, scanRepository,  updateTask, getReport, type ScanResult, type RecoveryTask, type ReviveResult } from './api/client'
 import './App.css'
 
 const VIEW_LABELS: Record<ViewId,string> = { overview:'Overview', scanner:'Repository Scanner', findings:'Findings', checklist:'Recovery Checklist', reports:'Revival Reports', settings:'Settings' }
@@ -39,6 +39,11 @@ function App() {
   const [report,setReport]=useState<string|null>(null)
   const [reportError,setReportError]=useState<string|null>(null)
   const [reviveSummary,setReviveSummary]=useState<{scanId:string;before:number;after:number;files:number}|null>(null)
+
+  const [demoMode,setDemoMode]=useState(false)
+
+  // Hosted-demo flag. Any failure or unexpected shape silently keeps local mode (false).
+  useEffect(()=>{let cancelled=false;getConfig().then(cfg=>{if(!cancelled&&cfg&&cfg.demo_mode===true)setDemoMode(true)}).catch(()=>{});return()=>{cancelled=true}},[])
 
   useEffect(()=>{let cancelled=false;async function check(){try{const r=await fetch('/health');if(!cancelled)setHealthStatus(r.ok?'online':'offline')}catch{if(!cancelled)setHealthStatus('offline')}}check();const timer=setInterval(check,30000);return()=>{cancelled=true;clearInterval(timer)}},[])
 
@@ -140,7 +145,7 @@ function App() {
               {scanState === 'idle' && (
                 <>
                   <div className="section-label">Repository Scan</div>
-                  <ScanInput onScan={handleScan} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} />
+                  <ScanInput onScan={handleScan} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} demoMode={demoMode} />
                 </>
               )}
               {scanState === 'scanning' && <div className="loading-skeletons"><StatCardSkeleton /><FindingsSkeleton /></div>}
@@ -176,7 +181,7 @@ function App() {
           {activeView === 'scanner' && (
             <div className="view">
               <div className="section-label">Repository scan</div>
-              <ScanInput onScan={handleScan} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} />
+              <ScanInput onScan={handleScan} onDemo={handleDemo} isScanning={isScanning} repoPath={repoPath} setRepoPath={setRepoPath} demoMode={demoMode} />
               {scanState === 'idle' && <EmptyState icon={Radar} title="Ready to scan" description="Enter a local repository path or scan the bundled demo." />}
               {scanState === 'scanning' && <FindingsSkeleton />}
               {scanState === 'error' && error && <EmptyState icon={AlertCircle} title="Scan failed" description={error} />}
